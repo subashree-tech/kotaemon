@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 
+from decouple import config
 from langchain.output_parsers.boolean import BooleanOutputParser
 
 from kotaemon.base import Document
@@ -54,8 +55,11 @@ class LLMReranking(BaseReranking):
                 results.append(self.llm(_prompt).text)
 
         # use Boolean parser to extract relevancy output from LLM
-        results = [output_parser.parse(result) for result in results]
-        for include_doc, doc in zip(results, documents):
+        parsed_results = [output_parser.parse(result) for result in results]
+        for idx, include_doc in enumerate(parsed_results):
+            doc = documents[idx]
+            if config("KH_DEBUG", default=False, cast=bool):
+                doc.metadata["score__llm"] = results[idx]
             if include_doc:
                 filtered_docs.append(doc)
 

@@ -15,7 +15,6 @@ from ktem.llms.manager import llms
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.readers.file.base import default_file_metadata_func
 from llama_index.core.vector_stores import (
-    FilterCondition,
     FilterOperator,
     MetadataFilter,
     MetadataFilters,
@@ -30,7 +29,7 @@ from kotaemon.base import BaseComponent, Document, Node, Param, RetrievedDocumen
 from kotaemon.embeddings import BaseEmbeddings
 from kotaemon.indices import VectorIndexing, VectorRetrieval
 from kotaemon.indices.ingests.files import KH_DEFAULT_FILE_EXTRACTORS
-from kotaemon.indices.rankings import BaseReranking, CohereReranking, LLMReranking
+from kotaemon.indices.rankings import BaseReranking, LLMReranking
 from kotaemon.indices.splitters import BaseSplitter, TokenSplitter
 
 from .base import BaseFileIndexIndexing, BaseFileIndexRetriever
@@ -121,12 +120,10 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
             filters=[
                 MetadataFilter(
                     key="doc_id",
-                    value=vs_id,
-                    operator=FilterOperator.EQ,
+                    value=vs_ids,
+                    operator=FilterOperator.IN,
                 )
-                for vs_id in vs_ids
             ],
-            condition=FilterCondition.OR,
         )
 
         if self.mmr:
@@ -245,7 +242,6 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
                 )
             ],
             retrieval_mode=user_settings["retrieval_mode"],
-            reranker=CohereReranking(),
         )
         if not user_settings["use_reranking"]:
             retriever.reranker = None  # type: ignore

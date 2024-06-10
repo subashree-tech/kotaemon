@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Sequence, cast
 
 from theflow.settings import settings as flowsettings
+from decouple import config
 
 from kotaemon.base import BaseComponent, Document, RetrievedDocument
 from kotaemon.embeddings import BaseEmbeddings
@@ -145,6 +146,9 @@ class VectorRetrieval(BaseRetrieval):
                 embedding=emb, top_k=top_k, **kwargs
             )
             docs = self.doc_store.get(ids)
+            if config("KH_DEBUG", default=False, cast=bool):
+                for doc, score in zip(docs, scores):
+                    doc.metadata["score__similarity"] = score
             result = [
                 RetrievedDocument(**doc.to_dict(), score=score)
                 for doc, score in zip(docs, scores)
@@ -164,15 +168,22 @@ class VectorRetrieval(BaseRetrieval):
             # full-text search section
             query = text.text if isinstance(text, Document) else text
             docs = self.doc_store.query(query, top_k=top_k, doc_ids=scope)
+            es_docs = {doc.id_: doc for doc in docs}
             result = [
                 RetrievedDocument(**doc.to_dict(), score=-1.0)
                 for doc in docs
-                if doc not in vs_ids
+                if doc.id_ not in vs_ids
             ]
-            result += [
-                RetrievedDocument(**doc.to_dict(), score=score)
-                for doc, score in zip(vs_docs, vs_scores)
-            ]
+            for doc, score in zip(vs_docs, vs_scores):
+                rdoc = RetrievedDocument(**doc.to_dict(), score=score)
+                rdoc.score = score
+                if config("KH_DEBUG", default=False, cast=bool):
+                    rdoc.metadata["score__similarity"] = score
+                    if rdoc.id_ in es_docs:
+                        rdoc.metadata["score__elasticsearch"] = es_docs[
+                            rdoc.id_
+                        ].metadata.get("score__elasticsearch", 1)
+                result.append(rdoc)
 
         # use additional reranker to re-order the document list
         if self.rerankers:

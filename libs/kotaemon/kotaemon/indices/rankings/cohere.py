@@ -34,6 +34,8 @@ class CohereReranking(BaseReranking):
         for r in response.results:
             doc = documents[r.index]
             doc.metadata["relevance_score"] = round(r.relevance_score, 2)
+            if config("KH_DEBUG", default=False, cast=bool):
+                doc.metadata["score__cohere"] = r.relevance_score
             compressed_docs.append(doc)
 
         return compressed_docs

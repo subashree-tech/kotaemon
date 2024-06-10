@@ -112,11 +112,13 @@ class ElasticsearchDocumentStore(BaseDocumentStore):
         res = self.client.search(index=self.index_name, body=query)
         docs = []
         for r in res["hits"]["hits"]:
+            metadata = r["_source"]["metadata"]
+            metadata["score__elasticsearch"] = r["_score"]
             docs.append(
                 Document(
                     id_=r["_id"],
                     text=r["_source"]["content"],
-                    metadata=r["_source"]["metadata"],
+                    metadata=metadata,
                 )
             )
         return docs
@@ -145,7 +147,14 @@ class ElasticsearchDocumentStore(BaseDocumentStore):
         if not isinstance(ids, list):
             ids = [ids]
         query_dict = {"query": {"terms": {"_id": ids}}, "size": 10000}
-        return self.query_raw(query_dict)
+
+        es_output = self.query_raw(query_dict)
+        idxs = {doc.id_: idx for idx, doc in enumerate(es_output)}
+        output = []
+        for id_ in ids:
+            if id_ in idxs:
+                output.append(es_output[idxs[id_]])
+        return output
 
     def count(self) -> int:
         """Count number of documents"""
