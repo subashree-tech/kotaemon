@@ -56,7 +56,7 @@ class PrepareEvidencePipeline(BaseComponent):
     """
 
     trim_func: TokenSplitter = TokenSplitter.withx(
-        chunk_size=3000,
+        chunk_size=1500,
         chunk_overlap=0,
         separator=" ",
         tokenizer=partial(
@@ -492,19 +492,20 @@ class FullQAPipeline(BaseReasoning):
         self, message: str, history: list
     ) -> tuple[list[RetrievedDocument], list[Document]]:
         """Retrieve the documents based on the message"""
-        if len(message) < self.trigger_context:
-            # prefer adding context for short user questions, avoid adding context for
-            # long questions, as they are likely to contain enough information
-            # plus, avoid the situation where the original message is already too long
-            # for the model to handle
-            query = self.add_query_context(message, history).content
-        else:
-            query = message
-        print(f"Rewritten query: {query}")
-        if not query:
-            # TODO: previously return [], [] because we think this message as something
-            # like "Hello", "I need help"...
-            query = message
+        # if len(message) < self.trigger_context:
+        #     # prefer adding context for short user questions, avoid adding context for
+        #     # long questions, as they are likely to contain enough information
+        #     # plus, avoid the situation where the original message is already too long
+        #     # for the model to handle
+        #     query = self.add_query_context(message, history).content
+        # else:
+        #     query = message
+        # print(f"Rewritten query: {query}")
+        # if not query:
+        #     # TODO: previously return [], [] because we think this message as something
+        #     # like "Hello", "I need help"...
+        #     query = message
+        query = message
 
         docs, doc_ids = [], []
         for idx, retriever in enumerate(self.retrievers):
