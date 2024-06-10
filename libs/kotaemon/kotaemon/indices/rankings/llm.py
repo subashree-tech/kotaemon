@@ -12,7 +12,7 @@ from .base import BaseReranking
 
 RERANK_PROMPT_TEMPLATE = """Given the following question and context,
 return YES if the context is relevant to the question and NO if it isn't.
-Answer very concisely in English.
+Answer very concisely in English. Avoid having both YES and NO in the answer.
 
 > Question: {question}
 > Context:

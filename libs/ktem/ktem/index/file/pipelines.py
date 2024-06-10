@@ -133,6 +133,8 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
 
         # rerank
         docs = self.vector_retrieval(text=text, top_k=self.top_k, **retrieval_kwargs)
+        docs = [_ for _ in docs if _.metadata.get("type", "") != "image"]
+
         if docs and self.get_from_path("reranker"):
             docs = self.reranker(docs, query=text)
 
