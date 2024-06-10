@@ -252,7 +252,7 @@ class AnswerWithContextPipeline(BaseComponent):
     def run(
         self, question: str, evidence: str, evidence_mode: int = 0, **kwargs
     ) -> Document:
-        return self.invoke(question, evidence, evidence_mode, **kwargs)
+        return self.stream(question, evidence, evidence_mode, **kwargs)
 
     def invoke(
         self, question: str, evidence: str, evidence_mode: int = 0, **kwargs
@@ -337,7 +337,7 @@ class AnswerWithContextPipeline(BaseComponent):
             try:
                 # try streaming first
                 print("Trying LLM streaming")
-                for text in self.llm.stream(messages):
+                for text in self.get_from_path("llm").stream(messages):
                     output += text.text
                     self.report_output(Document(content=text.text, channel="chat"))
                     await asyncio.sleep(0)
@@ -380,7 +380,7 @@ class AnswerWithContextPipeline(BaseComponent):
             try:
                 # try streaming first
                 print("Trying LLM streaming")
-                for text in self.llm.stream(messages):
+                for text in self.get_from_path("llm").stream(messages):
                     output += text.text
                     yield Document(channel="chat", content=text.text)
             except NotImplementedError:
@@ -696,7 +696,7 @@ class FullQAPipeline(BaseReasoning):
             yield _
 
         evidence_mode, evidence = self.evidence_pipeline(docs).content
-        answer = yield from self.answering_pipeline.stream(
+        answer = yield from self.answering_pipeline(
             question=message,
             history=history,
             evidence=evidence,
@@ -706,6 +706,9 @@ class FullQAPipeline(BaseReasoning):
         )
 
         # show the evidence
+        if answer is None:
+            return Document(content="", channel="chat")
+
         with_citation, without_citation = self.prepare_citations(answer, docs)
         if not with_citation and not without_citation:
             yield Document(channel="info", content="No evidence found.\n")
@@ -722,6 +725,9 @@ class FullQAPipeline(BaseReasoning):
                     yield _
 
         return answer
+
+    def run(self, *args, **kwargs):
+        return self.stream(*args, **kwargs)
 
     @classmethod
     def get_pipeline(cls, settings, states, retrievers):

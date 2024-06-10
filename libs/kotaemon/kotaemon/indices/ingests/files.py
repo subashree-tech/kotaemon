@@ -32,6 +32,7 @@ KH_DEFAULT_FILE_EXTRACTORS: dict[str, BaseReader] = {
     ".tiff": unstructured,
     ".tif": unstructured,
     ".pdf": PDFReader(),
+    ".pptx": unstructured,
 }
 
 

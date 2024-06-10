@@ -460,7 +460,7 @@ class ChatPage(BasePage):
 
         len_ref = -1  # for logging purpose
 
-        for response in pipeline.stream(chat_input, conversation_id, chat_history):
+        for response in pipeline(chat_input, conversation_id, chat_history):
 
             if not isinstance(response, Document):
                 continue
