@@ -74,7 +74,7 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
     """
 
     embedding: BaseEmbeddings
-    reranker: BaseReranking = LLMReranking.withx()
+    rerankers: list[BaseReranking] = [LLMReranking.withx()]
     get_extra_table: bool = False
     mmr: bool = False
     top_k: int = 5
@@ -115,16 +115,16 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
             results = session.execute(stmt)
             vs_ids = [r[0].target_id for r in results.all()]
 
-        retrieval_kwargs["scope"] = vs_ids
-        retrieval_kwargs["filters"] = MetadataFilters(
-            filters=[
-                MetadataFilter(
-                    key="doc_id",
-                    value=vs_ids,
-                    operator=FilterOperator.IN,
-                )
-            ],
-        )
+        # retrieval_kwargs["scope"] = vs_ids
+        # retrieval_kwargs["filters"] = MetadataFilters(
+        #     filters=[
+        #         MetadataFilter(
+        #             key="doc_id",
+        #             value=vs_ids,
+        #             operator=FilterOperator.IN,
+        #         )
+        #     ],
+        # )
 
         if self.mmr:
             # TODO: double check that llama-index MMR works correctly
@@ -135,8 +135,9 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
         docs = self.vector_retrieval(text=text, top_k=self.top_k, **retrieval_kwargs)
         docs = [_ for _ in docs if _.metadata.get("type", "") != "image"]
 
-        if docs and self.get_from_path("reranker"):
-            docs = self.reranker(docs, query=text)
+        if docs and self.get_from_path("rerankers"):
+            for reranker in self.rerankers:
+                docs = reranker(docs, query=text)
 
         if not self.get_extra_table:
             return docs
@@ -244,14 +245,15 @@ class DocumentRetrievalPipeline(BaseFileIndexRetriever):
                 )
             ],
             retrieval_mode=user_settings["retrieval_mode"],
+            rerankers=[CohereReranking()],
         )
         if not user_settings["use_reranking"]:
             retriever.reranker = None  # type: ignore
-        elif isinstance(retriever.reranker, LLMReranking):
-            retriever.reranker = CohereReranking()
-            # retriever.reranker.llm = llms.get(
-            #     user_settings["reranking_llm"], llms.get_default()
-            # )
+        # elif isinstance(retriever.rerankers, LLMReranking):
+        #     retriever.reranker = [CohereReranking()]
+        #     retriever.reranker.llm = llms.get(
+        #         user_settings["reranking_llm"], llms.get_default()
+        #     )
 
         kwargs = {".doc_ids": selected}
         retriever.set_run(kwargs, temp=True)
