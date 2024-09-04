@@ -8,3 +8,4 @@ mkdocs-section-index
 mdx_truly_sane_lists
 theflow
 streamlit
+python-decouple
