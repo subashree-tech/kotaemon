@@ -1,4 +1,5 @@
 mkdocs
+mkdocstrings[python]
 mkdocs-material
 mkdocs-gen-files
 mkdocs-literate-nav
@@ -6,8 +7,3 @@ mkdocs-video
 mkdocs-git-revision-date-localized-plugin
 mkdocs-section-index
 mdx_truly_sane_lists
-theflow
-streamlit
-python-decouple
-gradio
-ktem
